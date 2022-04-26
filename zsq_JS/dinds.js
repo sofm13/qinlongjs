@@ -113,7 +113,7 @@ let msg = '';
             }
 
             //随机任务
-            if (timesFeed.buttonStatus == 'TO_REWARD') {
+            if (timesFeed != undefined && timesFeed.buttonStatus == 'TO_REWARD') {
                 console.log(`\n 开始执行随机任务 \n`);
                 await achieve(3 * 1000, timesFeed.taskCode, "领取浇水十次水滴");
             }
@@ -146,7 +146,7 @@ let msg = '';
     }
 
 })()
-    .catch((e) => console.logErr(e))
+    .catch((e) => console.log(e))
     .finally(() => $.done())
 
 
@@ -483,7 +483,7 @@ function wyy(timeout = 3 * 1000) {
                 console.log(`\n 【网抑云时间】: ${data.content}  by--${data.music}`);
                 return data.content;
             } catch (e) {
-                console.logErr(e, resp);
+                console.log(e, resp);
             } finally {
                 resolve()
             }
