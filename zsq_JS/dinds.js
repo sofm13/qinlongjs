@@ -2,6 +2,8 @@
  * 叮咚买菜APP，叮咚果园
  * 地址： https://raw.githubusercontent.com/sofm13/qinlongjs/master/dinds.js
  * 
+ * cron  5 8,11,17 * * *     sofm13_qinlongjs_master/dinds.js
+ * 
  * 4-26   叮咚买菜App签到,叮咚果园自动浇水，领福袋，每日签到，连续签到，浏览商品，完成任务等
  * 暂无叮咚鱼塘，有需求可加入tg：https://t.me/zsq_ql  联系群主 @sofm_13
  * 
