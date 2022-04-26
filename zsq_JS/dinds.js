@@ -1,8 +1,11 @@
 /**
- * 教程 
- * 地址： https://raw.githubusercontent.com/yml2213/template/master/jiaocheng.js
+ * 叮咚买菜APP，叮咚果园
+ * 地址： https://raw.githubusercontent.com/sofm13/qinlongjs/master/dinds.js
  * 
- * 教程    叮咚买菜签到及叮咚果园自动浇水，完成任务等
+ * 4-26   叮咚买菜App签到,叮咚果园自动浇水，领福袋，每日签到，连续签到，浏览商品，完成任务等
+ * 暂无叮咚鱼塘，有需求可加入tg：https://t.me/zsq_ql  联系群主 @sofm_13
+ * 
+ * 抓包方式 进入叮咚果园随机抓取接口取Cookie即可
  * 
  * ========= 青龙 =========
  * 变量格式：export dindong_cookie=' xxxx & xxx @  xxxx & xxx '  多个账号用 @分割 
