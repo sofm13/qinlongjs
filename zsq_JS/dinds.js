@@ -1,6 +1,7 @@
 /**
- * 叮咚买菜APP，叮咚果园
- * 地址： https://raw.githubusercontent.com/sofm13/qinlongjs/master/dinds.js
+ * 叮咚买菜APP，叮咚果园，叮咚鱼塘
+ * 需要先完成新手引导任务
+ * 地址： https://raw.githubusercontent.com/sofm13/qinlongjs/master/zsq_JS/dinds.js
  * 
  * cron  5 8,11,17 * * *     sofm13_qinlongjs_master/dinds.js
  * 
@@ -22,6 +23,8 @@ const debug = 0; //0为关闭调试，1为打开调试,默认为0
 //////////////////////
 let dindong_ck = process.env.dindong_cookie; // 这里是 从青龙的 配置文件 读取你写的变量
 let dindong_ckArr = [];
+let feed = 2;
+let feedStr = "浇水";
 let ck = '';
 let uid = '';
 let seedId = '';
@@ -29,13 +32,18 @@ let propid = '';
 let propsCode = '';
 let amount = 0;
 let percent = 0;
-let threeFood = {};
-let meiriqd = {};
-let lianxuqd = {};
-let viewPro = {};
-let timesFeed = {};
+let taskList = [];
+let haveFish = true;
 let msg = '';
 
+const taskStatus = {
+    "TO_ACHIEVE": "未完成任务",
+    "TO_REWARD": "已完成，未领取奖励",
+    "WAITING_REWARD": "等待完成",
+    "WAITING_WINDOW": "未到领取时间",
+    "FINISHED": "完成，已领取奖励",
+    "TO_RECEIVE": "待领取任务"
+};
 
 !(async () => {
 
@@ -64,81 +72,110 @@ let msg = '';
 
             ck = dindong_ckArr[index].split('&'); // 这里是分割你每个账号的每个小项   
 
-            //个人信息
-            await userDetail();
-            if (debug) {
-                console.log(`\n 【debug】 这是你第 ${num} 账号信息uid:\n ${uid}\n`);
-            }
-
-            console.log(`\n 开始签到 \n`);
+            console.log(`\n 开始签到30天领60元买菜金`);
             await signin();
 
-            console.log(`\n 查询任务列表 \n`);
-            await getTask()
-
-            console.log(`\n 开始执行三餐开福袋 \n`);
-            if (threeFood.buttonStatus == 'TO_ACHIEVE') {
-                await achieve(3 * 1000, threeFood.taskCode, "三餐开福袋");
-            }
-            else {
-                console.log(`\n 不在执行时间范围内或已完成 \n`);
-            }
-
-            console.log(`\n 开始执行每日签到,第${meiriqd.continuousDays}天 \n`);
-            if (meiriqd.buttonStatus == 'TO_ACHIEVE') {
-                await achieve(3 * 1000, meiriqd.taskCode, "每日签到");
-            }
-            else {
-                console.log(`\n 已完成 \n`);
-            }
-
-            console.log(`\n 开始执行连续签到 \n`);
-            if (lianxuqd.buttonStatus == 'TO_ACHIEVE') {
-                await achieve(3 * 1000, lianxuqd.taskCode, "连续签到");
-            }
-            else {
-                console.log(`\n 已完成 \n`);
-            }
-
-            console.log(`\n 开始执行浏览商品 \n`);
-            if (viewPro.buttonStatus == 'TO_ACHIEVE') {
-                let taksLogId = await achieve(3 * 1000, viewPro.taskCode, "浏览商品");
-                await reward(3 * 1000, taksLogId);
-            }
-            else if (viewPro.buttonStatus == 'TO_REWARD') {
-                await reward(3 * 1000, viewPro.userTaskLogId);
-            }
-            else {
-                console.log(`\n 已完成 \n`);
-            }
-
-            //随机任务
-            if (timesFeed != undefined && timesFeed.buttonStatus == 'TO_REWARD') {
-                console.log(`\n 开始执行随机任务 \n`);
-                await achieve(3 * 1000, timesFeed.taskCode, "领取浇水十次水滴");
-            }
-            else {
-                console.log(`\n 已完成 \n`);
-            }
-
-            //放在最后
+            //个人信息
+            console.log(`\n 开始执行叮咚果园任务 `);
+            feed = 2;
+            feedStr = "浇水";
             await userDetail();
-            console.log(`\n 开始浇水 \n`);
 
-            while (amount > 10) {
-                await jiaoSui();
+            if (debug) {
+                console.log(`\n 【debug】 这是你第 ${num} 账号信息uid:\n ${uid}`);
             }
 
-            // 这里是开始做任务    需要注意的点
-            // 	1. await只能运行与async函数中
-            // 	2. 函数的名字不可以相同
-            //      3. 不够可以自己复制
+            if (uid == undefined) {
+                console.log(`\n【获取果园个人信息】 失败 ❌,uid为空,请先手动进入果园以及鱼塘完成新手引导任务！ `)
+            }
+            else {
+
+                console.log(`\n【获取个人信息】成功了呢uid为${uid} 🎉 `)
+                console.log(`\n 查询果园任务列表`);
+                await getTask();
+
+                for (const task of taskList) {
+                    if (["INVITATION", "POINT_EXCHANGE", "LUCK_DRAW"].includes(task.taskCode)) {
+                        continue;
+                    }
+                    const desc = task.taskDescription ? (task.taskDescription[0] ? `:${task.taskDescription[0]}` : "") : "";
+                    const status = taskStatus[task.buttonStatus] ? taskStatus[task.buttonStatus] : (task.buttonStatus ? task.buttonStatus : "未知");
+                    switch (task.buttonStatus) {
+                        case "TO_ACHIEVE":
+                            if (["ANY_ORDER", "BUY_GOODS", "MULTI_ORDER", "FEED_CRAP"].includes(task.taskCode)) {
+                                continue;
+                            }
+                            console.log(`\n${task.taskName}(${task.taskCode})${desc}\n- 持续天数:${task.continuousDays}\n- 任务状态:${status}`);
+                            await achieve(3 * 1000, task.taskCode, task.taskName);
+                            break;
+                        case "TO_REWARD":
+                            task.userTaskLogId && await reward(3 * 1000, task.userTaskLogId);
+                            break;
+                        case "TO_RECEIVE":
+                            console.log(`\n${task.taskName}(${task.taskCode})${desc}\n- 持续天数:${task.continuousDays}\n- 任务状态:${status}`);
+                            task.userTaskLogId && await reward(3 * 1000, task.userTaskLogId);
+                            break;
+                    }
+                }
+
+                //放在最后
+                await userDetail();
+                console.log(`\n 开始浇水 `);
+
+                while (amount > 10) {
+                    await jiaoSui();
+                }
+                msg += `\n 第 ${num} 账号信息uid: ${uid} 叮咚果园已完成${percent}% `;
+
+            }
 
 
+            //个人信息
+            console.log(`\n 开始执行叮咚鱼塘任务 `);
+            feed = 1;
+            feedStr = "喂鱼";
+            await fishDetail();
+            if (!haveFish) {
+                console.log(`\n【获取叮咚鱼塘个人信息】 失败 ❌,请先手动进入鱼塘完成新手引导任务！ `)
+            }
+            else {
+                console.log(`\n 查询叮咚鱼塘任务列表 `);
+                await getTask();
 
+                for (const task of taskList) {
+                    if (["INVITATION", "POINT_EXCHANGE", "LUCK_DRAW", "ANY_ORDER", "BUY_GOODS"].includes(task.taskCode)) {
+                        continue;
+                    }
 
+                    const desc = task.taskDescription ? (task.taskDescription[0] ? `:${task.taskDescription[0]}` : "") : "";
+                    const status = taskStatus[task.buttonStatus] ? taskStatus[task.buttonStatus] : (task.buttonStatus ? task.buttonStatus : "未知");
+                    switch (task.buttonStatus) {
+                        case "TO_ACHIEVE":
+                            if (["ANY_ORDER", "BUY_GOODS", "MULTI_ORDER", "FEED_CRAP"].includes(task.taskCode)) {
+                                continue;
+                            }
+                            console.log(`\n${task.taskName}(${task.taskCode})${desc}\n- 持续天数:${task.continuousDays}\n- 任务状态:${status}`);
+                            await achieve(3 * 1000, task.taskCode, task.taskName);
+                            break;
+                        case "TO_REWARD":
+                            task.userTaskLogId && await reward(3 * 1000, task.userTaskLogId);
+                            break;
+                        case "TO_RECEIVE":
+                            console.log(`\n${task.taskName}(${task.taskCode})${desc}\n- 持续天数:${task.continuousDays}\n- 任务状态:${status}`);
+                            task.userTaskLogId && await reward(3 * 1000, task.userTaskLogId);
+                            break;
+                    }
+                }
 
-            msg += `\n 第 ${num} 账号信息uid: ${uid} 已完成${percent}%完成 \n`;
+                //放在最后
+                await fishDetail();
+                console.log(`\n 开始喂鱼 `);
+
+                while (amount > 10) {
+                    await jiaoSui();
+                }
+                msg += `\n 第 ${num} 账号信息uid: ${uid} 叮咚鱼塘已完成${percent}% `;
+            }
 
         }
         console.log(msg);
@@ -155,15 +192,7 @@ function userDetail(timeout = 3 * 1000) {
     return new Promise((resolve) => {
         let url = {
             url: `https://farm.api.ddxq.mobi/api/v2/userguide/orchard/detail`,    // 这是请求的 url 可以直接用我们抓包、精简后的URL
-            headers: {            // headers 是请求体  可以直接用精简后的 hd  也就是服务器校验的部分，他需要啥，我们就给他啥  
-                "Content-Type": "application/json;charset=UTF-8",
-                "Host": "farm.api.ddxq.mobi",
-                "User-Agent": "Mozilla/5.0 (Linux; Android 12; IN2020 Build/SKQ1.210216.001; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/89.0.4389.72 MQQBrowser/6.2 TBS/046011 Mobile Safari/537.36 xzone/9.44.0",
-                "cookie": ck,
-                "Connection": "keep-alive",
-                "ddmc-game-tid": 2,
-                "accept": "*/*"
-            },
+            headers: initRequestHeaders()
         }
 
         $.get(url, async (error, response, data) => {     // 这是一个 get 请求 , 如果是 post  记得把这里改了 
@@ -175,8 +204,14 @@ function userDetail(timeout = 3 * 1000) {
                 let result = JSON.parse(data);
                 if (result.code == 0) {        // 这里是根据服务器返回的数据做判断  方便我们知道任务是否完成了
 
-                    console.log(`\n【获取个人信息】成功了呢 🎉 `)
-                    uid = result.data.guideProVos.ORCHARD_FRIEND_ONE.userId;
+
+                    if (result.data.guideProVos.ORCHARD_FRIEND_ONE != undefined) {
+                        uid = result.data.guideProVos.ORCHARD_FRIEND_ONE.userId;
+                    }
+                    else {
+                        uid = undefined;
+                        return;
+                    }
                     seedId = result.data.baseSeed.seedId;
                     propid = result.data.feed.propsId;
                     amount = result.data.feed.amount;
@@ -196,24 +231,54 @@ function userDetail(timeout = 3 * 1000) {
     })
 }
 
+//鱼塘信息
+function fishDetail(timeout = 3 * 1000) {
+    return new Promise((resolve) => {
+        let url = {
+            url: `https://farm.api.ddxq.mobi/api/v2/userguide/detail`,    // 这是请求的 url 可以直接用我们抓包、精简后的URL
+            headers: initRequestHeaders()
+        }
+
+        $.get(url, async (error, response, data) => {     // 这是一个 get 请求 , 如果是 post  记得把这里改了 
+            try {
+
+                let result = JSON.parse(data);
+
+                if (result.code == 0) {        // 这里是根据服务器返回的数据做判断  方便我们知道任务是否完成了
+
+                    if (result.data.baseSeed == null) {
+                        haveFish = false;
+                        return;
+                    }
+                    haveFish = true;
+                    seedId = result.data.baseSeed.seedId;
+                    propid = result.data.feed.propsId;
+                    amount = result.data.feed.amount;
+                    propsCode = result.data.feed.propsCode;
+                    percent = parseFloat(result.data.baseSeed.expPercent);
+                } else {    // 这里是根据服务器返回的数据做判断  方便我们知道任务是否完成了
+
+                    console.log(`\n【获取鱼塘个人信息】 失败 ❌ 了呢,可能是网络被外星人抓走了!\n `)
+                }
+
+            } catch (e) {
+                console.log(e);
+            } finally {
+                resolve()
+            }
+        }, timeout)
+    })
+}
+
 //任务列表
 function getTask(timeout = 3 * 1000) {
     return new Promise((resolve) => {
         let url = {
             url: `https://farm.api.ddxq.mobi/api/v2/task/list-orchard?uid=${uid}&reward=${propsCode}`,    // 这是请求的 url 可以直接用我们抓包、精简后的URL
-            headers: {            // headers 是请求体  可以直接用精简后的 hd  也就是服务器校验的部分，他需要啥，我们就给他啥  
-                "Content-Type": "application/json;charset=UTF-8",
-                "Host": "farm.api.ddxq.mobi",
-                "User-Agent": "Mozilla/5.0 (Linux; Android 12; IN2020 Build/SKQ1.210216.001; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/89.0.4389.72 MQQBrowser/6.2 TBS/046011 Mobile Safari/537.36 xzone/9.44.0",
-                "cookie": ck,
-                "Connection": "keep-alive",
-                "ddmc-game-tid": 2,
-                "accept": "*/*"
-            },
+            headers: initRequestHeaders()
         }
 
         if (debug) {
-            console.log(`\n 【debug】=============== 这是 任务列表 请求 url ===============`);
             console.log(url);
         }
 
@@ -227,11 +292,7 @@ function getTask(timeout = 3 * 1000) {
                 if (result.code == 0) {        // 这里是根据服务器返回的数据做判断  方便我们知道任务是否完成了
 
                     console.log(`\n【获取任务】成功了呢 🎉 `)
-                    threeFood = result.data.userTasks.find(x => x.taskName == "三餐开福袋");
-                    meiriqd = result.data.userTasks.find(x => x.taskName == "每日签到");
-                    lianxuqd = result.data.userTasks.find(x => x.taskName == "连续签到");
-                    viewPro = result.data.userTasks.find(x => x.taskName == "浏览商品奖水滴");
-                    timesFeed = result.data.userTasks.find(x => x.taskName == "浇水10次送水滴");
+                    taskList = result.data.userTasks;
                 } else {    // 这里是根据服务器返回的数据做判断  方便我们知道任务是否完成了
 
                     console.log(`\n【获取任务】 失败 ❌ 了呢,可能是网络被外星人抓走了!\n `)
@@ -251,15 +312,7 @@ function achieve(timeout = 3 * 1000, code, str) {
     return new Promise((resolve) => {
         let url = {
             url: `https://farm.api.ddxq.mobi/api/v2/task/achieve?uid=${uid}&taskCode=${code}`,    // 这是请求的 url 可以直接用我们抓包、精简后的URL
-            headers: {            // headers 是请求体  可以直接用精简后的 hd  也就是服务器校验的部分，他需要啥，我们就给他啥  
-                "Content-Type": "application/json;charset=UTF-8",
-                "Host": "farm.api.ddxq.mobi",
-                "User-Agent": "Mozilla/5.0 (Linux; Android 12; IN2020 Build/SKQ1.210216.001; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/89.0.4389.72 MQQBrowser/6.2 TBS/046011 Mobile Safari/537.36 xzone/9.44.0",
-                "cookie": ck,
-                "Connection": "keep-alive",
-                "ddmc-game-tid": 2,
-                "accept": "*/*"
-            },
+            headers: initRequestHeaders()
         }
 
         $.get(url, async (error, response, data) => {     // 这是一个 get 请求 , 如果是 post  记得把这里改了 
@@ -272,9 +325,6 @@ function achieve(timeout = 3 * 1000, code, str) {
                 if (result.code == 0) {        // 这里是根据服务器返回的数据做判断  方便我们知道任务是否完成了
 
                     console.log(`\n【执行${str}】成功了呢 🎉 `)
-                    if (result.data.userTaskLogId != '') {
-                        return result.data.userTaskLogId;
-                    }
                 } else {    // 这里是根据服务器返回的数据做判断  方便我们知道任务是否完成了
 
                     console.log(`\n【执行${str}】 失败 ❌ 了呢,可能是网络被外星人抓走了!\n `)
@@ -289,22 +339,12 @@ function achieve(timeout = 3 * 1000, code, str) {
     })
 }
 
-//浇水
+//浇水或养鱼
 function jiaoSui(timeout = 3 * 1000) {
     return new Promise((resolve) => {
         let url = {
             url: `https://farm.api.ddxq.mobi/api/v2/props/feed?propsCode=${propsCode}&uid=${uid}&seedId=${seedId}&propsId=${propid}`,    // 这是请求的 url 可以直接用我们抓包、精简后的URL
-            headers: {            // headers 是请求体  可以直接用精简后的 hd  也就是服务器校验的部分，他需要啥，我们就给他啥  
-                "Content-Type": "application/json;charset=UTF-8",
-                "Host": "farm.api.ddxq.mobi",
-                "User-Agent": "Mozilla/5.0 (Linux; Android 12; IN2020 Build/SKQ1.210216.001; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/89.0.4389.72 MQQBrowser/6.2 TBS/046011 Mobile Safari/537.36 xzone/9.44.0",
-                "cookie": ck,
-                "Connection": "keep-alive",
-                "ddmc-game-tid": 2,
-                "accept": "*/*"
-            },
-            // body: '',       // 这是一个 get 请求，没有请求体 body   如果是 post 不要忘记他鸭！
-
+            headers: initRequestHeaders()
         }
 
         $.get(url, async (error, response, data) => {     // 这是一个 get 请求 , 如果是 post  记得把这里改了 
@@ -318,10 +358,10 @@ function jiaoSui(timeout = 3 * 1000) {
 
                     amount = result.data.props.amount;
                     percent = parseFloat(result.data.seed.expPercent);
-                    console.log(`\n【浇水】 成功了呢,${result.data.seed.msg} 🎉 `)
+                    console.log(`\n【${feedStr}】 成功了呢,${result.data.seed.msg} 🎉 `)
                 } else {    // 这里是根据服务器返回的数据做判断  方便我们知道任务是否完成了
 
-                    console.log(`\n【第${num}次浇水】 失败 ❌ 了呢,可能是网络被外星人抓走了!\n `)
+                    console.log(`\n【第${num}次${feedStr}】 失败 ❌ 了呢,可能是网络被外星人抓走了!\n `)
                 }
 
             } catch (e) {
@@ -338,17 +378,7 @@ function reward(timeout = 3 * 1000, taksLogId) {
     return new Promise((resolve) => {
         let url = {
             url: `https://farm.api.ddxq.mobi/api/v2/task/reward?uid=${uid}&userTaskLogId=${taksLogId}`,    // 这是请求的 url 可以直接用我们抓包、精简后的URL
-            headers: {            // headers 是请求体  可以直接用精简后的 hd  也就是服务器校验的部分，他需要啥，我们就给他啥  
-                "Content-Type": "application/json;charset=UTF-8",
-                "Host": "farm.api.ddxq.mobi",
-                "User-Agent": "Mozilla/5.0 (Linux; Android 12; IN2020 Build/SKQ1.210216.001; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/89.0.4389.72 MQQBrowser/6.2 TBS/046011 Mobile Safari/537.36 xzone/9.44.0",
-                "cookie": ck,
-                "Connection": "keep-alive",
-                "ddmc-game-tid": 2,
-                "accept": "*/*"
-            },
-            // body: '',       // 这是一个 get 请求，没有请求体 body   如果是 post 不要忘记他鸭！
-
+            headers: initRequestHeaders()
         }
 
         $.get(url, async (error, response, data) => {     // 这是一个 get 请求 , 如果是 post  记得把这里改了 
@@ -364,7 +394,39 @@ function reward(timeout = 3 * 1000, taksLogId) {
 
                 } else {    // 这里是根据服务器返回的数据做判断  方便我们知道任务是否完成了
 
-                    console.log(`\n【领取水滴】 失败 ❌ 了呢,可能是网络被外星人抓走了!\n `)
+                    console.log(`\n【领取水滴】 失败 ❌ 了呢,可能是网络被外星人抓走了!别担心，下次会自动领取的哦 \n `)
+                }
+
+            } catch (e) {
+                console.log(e);
+            } finally {
+                resolve()
+            }
+        }, timeout)
+    })
+}
+
+//领取任务
+function receive(timeout = 3 * 1000, code, str) {
+    return new Promise((resolve) => {
+        let url = {
+            url: `https://farm.api.ddxq.mobi/api/v2/task/receive?uid=${uid}&taskCode=${code}`,    // 这是请求的 url 可以直接用我们抓包、精简后的URL
+            headers: initRequestHeaders()
+        }
+
+        $.get(url, async (error, response, data) => {     // 这是一个 get 请求 , 如果是 post  记得把这里改了 
+            try {
+                if (debug) {
+                    console.log(data)
+                }
+
+                let result = JSON.parse(data);
+                if (result.code == 0) {        // 这里是根据服务器返回的数据做判断  方便我们知道任务是否完成了
+
+                    console.log(`\n 【领取任务${str}】成功了呢 🎉 `)
+                } else {    // 这里是根据服务器返回的数据做判断  方便我们知道任务是否完成了
+
+                    console.log(`\n【领取任务${str}】 失败 ❌ 了呢,可能是网络被外星人抓走了!\n `)
                 }
 
             } catch (e) {
@@ -415,6 +477,19 @@ function signin(timeout = 3 * 1000) {
     })
 }
 
+
+const initRequestHeaders = function () {
+    return {
+        "Content-Type": "application/json;charset=UTF-8",
+        "Host": "farm.api.ddxq.mobi",
+        "User-Agent": "Mozilla/5.0 (Linux; Android 12; IN2020 Build/SKQ1.210216.001; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/89.0.4389.72 MQQBrowser/6.2 TBS/046011 Mobile Safari/537.36 xzone/9.44.0",
+        "cookie": ck,
+        "Connection": "keep-alive",
+        "ddmc-game-tid": feed,
+        "accept": "*/*"
+    };
+};
+
 //#region 固定代码 可以不管他
 // ============================================变量检查============================================ \\
 async function MoreUser() {
@@ -427,7 +502,7 @@ async function MoreUser() {
             dindong_ckArr.push(dindong_ck);
         }
     } else {
-        console.log(`\n 【${$.name}】：未填写变量 dindong_ck`)
+        console.log(`\n 【${$.name}】：未填写变量 dindong_cookie`)
         return;
     }
 
