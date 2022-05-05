@@ -1,28 +1,23 @@
 /**
- * 收益：一天 1 元，提现到支付宝
-
-扫码打开小程序 任意接口获取token ,tom大佬脚本只能用于圈X，故重写了青龙版 
-
-圈X配置如下，其他软件自行测试
-
-cron自己设置   一天一次即可
-
-[rewrite_local]
-#咸鱼翻身
-https://s76.yyyyy.run/api/user url script-request-header xycy.js
-[MITM]
-hostname = s76.yyyyy.run
- * 感谢投稿人员,感谢所有测试人员
- * ========= 青龙 =========
- * 变量格式: export xycy=' AZ @ AZ '  多个账号用 @分割 
- * 应该是随便一个 s76.yyyyy.run 域名的  token 就行
+ * 幸运答题，余额达50元即可提现，定时收货红包与答题卡，答题需要自己手动
  * 
- * 还是不会的请百度或者群里求助: tg: https://t.me/yml_tg  通知: https://t.me/yml2213_tg
+ * 地址： https://raw.githubusercontent.com/sofm13/qinlongjs/master/zsq_JS/xydt.js
+ * 
+ * cron  5 * * * *     sofm13_qinlongjs_master/xydt.js
+ * 
+ * 有需求可加入tg：https://t.me/zsq_ql, https://t.me/zsq_sofm13 联系群主 @sofm_13 或Q群978963762来一起交流啊
+ * 
+ * 抓包方式 进入小程序随机抓取接口 xcx.szlzyd.com 取body内的openid与customKey即可
+ * 
+ * ========= 青龙 =========
+ * 变量格式：export xydt='openId=?&key=? @ openId=?&key=? '  多个账号用 @分割 
+ * 
  */
 
 
 // @ts-ignore
-const $ = new Env("闲鱼吃鱼")
+const $ = new Env("幸运答题")
+const request = require('request');
 // @ts-ignore
 const Notify = 1 //0为关闭通知，1为打开通知,默认为1
 const debug = 0 //0为关闭调试，1为打开调试,默认为0
@@ -30,19 +25,30 @@ const debug = 0 //0为关闭调试，1为打开调试,默认为0
 
 const initRequestHeaders = () => {
 	return {
-		"User-Agent": "Mozilla/5.0 (Linux; Android 12; IN2020 Build/SKQ1.210216.001; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/86.0.4240.99 XWEB/3211 MMWEBSDK/20211001 Mobile Safari/537.36 MMWEBID/87 MicroMessenger/8.0.16.2040(0x2800105F) Process/appbrand0 WeChat/arm64 Weixin NetType/WIFI Language/zh_CN ABI/arm64 MiniProgramEnv/android",
-		"token": ck
+		"User-Agent": "Mozilla/5.0 (Linux; Android 12; IN2020 Build/SKQ1.210216.001; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/86.0.4240.99 XWEB/3211 MMWEBSDK/20211001 Mobile Safari/537.36 MMWEBID/87 MicroMessenger/8.0.16.2040(0x2800105F) Process/appbrand2 WeChat/arm64 Weixin NetType/WIFI Language/zh_CN ABI/arm64 MiniProgramEnv/android",
+		"content-type": "application/json",
+		'Host': 'xcx.szlzyd.com',
 	};
 }
 
 let msg = ''
 let ck = ''
 // @ts-ignore
-let ckStr = process.env.xycy
-//let ckStr = 'f91293a3-758a-493a-8fad-d64f1bdd4156'
+//let ckStr = process.env.xydt
+let ckStr = 'openId=o0T6Q4j28SW7VtnOlNFcIY4Js6PQ&key=8EFF631B3BC2D9020FB7'
 let ckStrArr = []
+let guids = '';
 /////////////////////////////////////////////////////////
-
+const taskType = [{ "name": "领取红包", "value": 54 }, { "name": "漂浮答题卡", "value": 90 }, { "name": "领取答题卡", "value": 92 }];
+const signDay = {
+	"1": 72,
+	"2": 74,
+	"3": 76,
+	"4": 78,
+	"5": 80,
+	"6": 82,
+	"7": 84
+}
 
 !(async () => {
 
@@ -50,6 +56,7 @@ let ckStrArr = []
 		return;
 	else {
 
+		await wyy();
 		console.log(
 			`\n\n=========================================    \n脚本执行 - 北京时间(UTC+8)：${new Date(
 				new Date().getTime() + new Date().getTimezoneOffset() * 60 * 1000 +
@@ -70,35 +77,107 @@ let ckStrArr = []
 
 			ck = ckStrArr[index].split('&'); // 这里是分割你每个账号的每个小项   
 
-			await user();
-			await signIn();
-			await signData();
 
+			for (let i = 0; i < taskType.length; i++) {
+
+				$.log(`开始执行${taskType[i].name} `)
+				await postKa(ck[0].split('=')[1], ck[1].split('=')[1], taskType[i].value, generateUUID())
+			}
+
+			for (const [k, v] of Object.entries(signDay)) {
+				$.log(`开始签到 ${v}`)
+				await postKa(ck[0].split('=')[1], ck[1].split('=')[1], v, generateUUID())
+			}
+
+			await user(ck[0].split('=')[1], ck[1].split('=')[1], generateUUID())
 		}
+
+		await SendMsg(msg);
+		$.done()
 	}
 
 })()
 	.catch((e) => $.logErr(e))
-	.finally(() => $.done())
+	.finally()
 
-function user(timeout = 3 * 1000) {
+async function user(openId, key, guid) {
+	let url = `https://xcx.szlzyd.com/new/api/user/account/wxb405959bf31342b2/v=030101_${openId}`;
+	let body = JSON.stringify({
+		"b": {
+			"appId": "wxb405959bf31342b2",
+			"productId": 10,
+			"productName": "幸运答题赚",
+			"openId": openId,
+			"customKey": key,
+			"unionId": "",
+			"uuid": guid,
+			"platform": "android",
+			"version": "030101"
+		},
+		"o": {}
+	});
+
+	var result = await requestPost(url, body)
+
+	if (request.code == 0) {
+		$.logErr(result.msg);
+	}
+	else {
+		let addmsg = `\n 账号${openId} 金币 ${result.data[0].validGold} 余额${result.data[0].validMoney} \n`;
+		$.log(addmsg);
+		msg += addmsg;
+	}
+}
+
+
+
+async function postKa(openId, key, type, guid) {
+
+	//$.log(`${openId} ${key} ${type} ${guid}`)
+
+	let url = `https://xcx.szlzyd.com/new/api/task/minute/wxb405959bf31342b2/v=030101_${openId}`;
+	let body = JSON.stringify({
+		"b": {
+			"appId": "wxb405959bf31342b2",
+			"productId": 10,
+			"productName": "幸运答题赚",
+			"openId": openId,
+			"customKey": key,
+			"unionId": "",
+			"uuid": guid,
+			"platform": "android",
+			"version": "030101"
+		},
+		"o": {
+			"bonusesTypeIds": [
+				type
+			]
+		}
+	});
+
+	var result = await requestPost(url, body)
+
+	if (request.code == 0) {
+		$.logErr(result.msg);
+	}
+	else {
+		$.log(result.msg);
+	}
+	// body: '{"b": {"appId": "wxb405959bf31342b2","productId": 10,"productName": "幸运答题赚","openId": "o0T6Q4j28SW7VtnOlNFcIY4Js6PQ","customKey": "8EFF631B3BC2D9020FB7","unionId": "","uuid": "7cddb7ae-6a85-4a47-9790-99c8b5cfc379","platform": "android","version": "030101"},"o": {"bonusesTypeIds": [92]}}'
+}
+
+function wyy(timeout = 3 * 1000) {
 	return new Promise((resolve) => {
 		let url = {
-			url: `https://s76.yyyyy.run/api/user/index`,
-			headers: initRequestHeaders(),
+			url: `https://keai.icu/apiwyy/api`
 		}
-
-		$.post(url, async (err, resp, data) => {
+		$.get(url, async (err, resp, data) => {
 			try {
 				data = JSON.parse(data)
-				if (data.code == 1) {
-					console.log('\n用户名：' + data.data.nickname)
-					signData()
-				} else {
-					console.log('\n' + data.message)
-				}
+				console.log(`\n 【网抑云时间】: ${data.content}  by--${data.music}`);
+				return data.content;
 			} catch (e) {
-				console.log(e);
+				console.log(e, resp);
 			} finally {
 				resolve()
 			}
@@ -106,96 +185,40 @@ function user(timeout = 3 * 1000) {
 	})
 }
 
-function signData(timeout = 3 * 1000) {
-	return new Promise((resolve) => {
-		let url = {
-			url: `https://s76.yyyyy.run/api/sign/userSignData`,
-			headers: initRequestHeaders(),
+function generateUUID() { // Public Domain/MIT
+	var d = new Date().getTime();//Timestamp
+	var d2 = ((typeof performance !== 'undefined') && performance.now && (performance.now() * 1000)) || 0;//Time in microseconds since page-load or 0 if unsupported
+	return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+		var r = Math.random() * 16;//random number between 0 and 16
+		if (d > 0) {//Use timestamp until depleted
+			r = (d + r) % 16 | 0;
+			d = Math.floor(d / 16);
+		} else {//Use microseconds since page-load if supported
+			r = (d2 + r) % 16 | 0;
+			d2 = Math.floor(d2 / 16);
 		}
-		$.post(url, async (err, resp, data) => {
-			try {
-				data = JSON.parse(data)
-				if (data.code == 1) {
-					console.log(`\n签到查询： 今日已签到 ${data.data.today_count} 次`)
-					today_count = data.data.today_count
-					if (today_count == 10) {
-						lingqu()
-					}
-					if (today_count < 10) {
-						for (let i = 0; i < 10 - today_count; i++) {
-							signIn()
-							let DD = RT(60000, 67000)
-							console.log(`随机延迟${DD / 1000}秒`);
-							await $.wait(DD)
-						}
-					}
-				} else {
-					console.log('\n' + data.message)
-				}
-			} catch (e) {
-				console.log(e);
-			} finally {
-				resolve()
+		return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+	});
+}
+
+function requestPost(url, body) {
+	var options = {
+		'method': 'POST',
+		'url': url,
+		'headers': initRequestHeaders(),
+		body: body
+
+	};
+	return new Promise((resolve, reject) => {
+		const req = request(options, (error, res, body) => {
+			if (!error && res.statusCode == 200) {
+				resolve(JSON.parse(body));
+			} else {
+				reject(error);
 			}
-		}, timeout)
-	})
+		});
+	});
 }
-
-function lingqu(timeout = 3 * 1000) {
-	return new Promise((resolve) => {
-		let url = {
-			url: `https://s76.yyyyy.run/api/user/lingqu`,
-			headers: initRequestHeaders(),
-		}
-		$.post(url, async (err, resp, data) => {
-			try {
-				data = JSON.parse(data)
-				if (data.code == 1) {
-					console.log(`\n领取权益：  ${data.msg} `)
-				} else {
-					console.log('\n' + data.message)
-				}
-			} catch (e) {
-				console.log(e);
-			} finally {
-				resolve()
-			}
-		}, timeout)
-	})
-}
-
-//签到
-function signIn(timeout = 3 * 1000) {
-	return new Promise((resolve) => {
-		let url = {
-			url: `https://s76.yyyyy.run/api/sign/userSignIn`,
-			headers: initRequestHeaders(),
-		}
-		$.post(url, async (err, resp, data) => {
-			try {
-				data = JSON.parse(data)
-				if (data.code == 1) {
-					console.log(`\n签到看视频：  ${data.msg} `)
-				} else {
-					console.log('\n' + data.message)
-				}
-			} catch (e) {
-				console.log(e);
-			} finally {
-				resolve()
-			}
-		}, timeout)
-	})
-}
-
-
-
-function RT(X, Y) {
-	do rt = Math.floor(Math.random() * Y);
-	while (rt < X)
-	return rt;
-}
-
 //#region 固定代码
 // ============================================变量检查============================================ \\
 // @ts-ignore
@@ -209,7 +232,7 @@ async function MoreUser() {
 			ckStrArr.push(ckStr);
 		}
 	} else {
-		console.log(`\n 【${$.name}】：未填写变量 xycy`)
+		console.log(`\n 【${$.name}】：未填写变量 xydt`)
 		return;
 	}
 
