@@ -77,19 +77,49 @@ const signDay = {
 
 			ck = ckStrArr[index].split('&'); // 这里是分割你每个账号的每个小项   
 
+			let openid = ck[0].split('=')[1];
+			let key = ck[1].split('=')[1];
 
 			for (let i = 0; i < taskType.length; i++) {
 
 				$.log(`开始执行${taskType[i].name} `)
-				await postKa(ck[0].split('=')[1], ck[1].split('=')[1], taskType[i].value, generateUUID())
+				await postKa(openid, key, taskType[i].value, generateUUID())
 			}
 
 			for (const [k, v] of Object.entries(signDay)) {
 				$.log(`开始签到 ${v}`)
-				await postKa(ck[0].split('=')[1], ck[1].split('=')[1], v, generateUUID())
+				await postKa(openid, key, v, generateUUID())
 			}
 
-			await user(ck[0].split('=')[1], ck[1].split('=')[1], generateUUID())
+			var datika = await getBonusesNum(openid, key, generateUUID())
+
+			var answerId = 0;
+			var correct = "";
+			var isfirst = 1;
+			for (let i = 0; i < parseInt(datika); i++) {
+
+				$.log(`开始答题第${i + 1}道`);
+				let answer = await answerQuery(openid, key, generateUUID());
+				answerId = answer.answerId;
+				correct = answer.correct;
+
+				let result = await finish(openid, key, generateUUID(), answerId, correct, isfirst);
+
+				isfirst = isfirst == 1 ? 0 : 1;
+				if (result.find(element => element.type == 1) != undefined) {
+					console.log(`获得金币${result.find(element => element.type == 0).amount} 余额${parseFloat(result.find(element => element.type == 1).amount / 10000)}`);
+				}
+				else {
+					console.log(`获得金币${result.find(element => element.type == 0).amount}`);
+				}
+				//延时
+				await sleep(1000);
+				await getBonusesNum(openid, key, generateUUID());
+				await sleep(1000);
+			}
+
+			await user(openid, key, generateUUID())
+
 		}
 
 		await SendMsg(msg);
@@ -100,6 +130,7 @@ const signDay = {
 	.catch((e) => $.logErr(e))
 	.finally()
 
+const sleep = (delay) => new Promise((resolve) => setTimeout(resolve, delay))
 async function user(openId, key, guid) {
 	let url = `https://xcx.szlzyd.com/new/api/user/account/wxb405959bf31342b2/v=030101_${openId}`;
 	let body = JSON.stringify({
@@ -126,9 +157,126 @@ async function user(openId, key, guid) {
 		let addmsg = `\n 账号${openId} 金币 ${result.data[0].validGold} 余额${result.data[0].validMoney} \n`;
 		$.log(addmsg);
 		msg += addmsg;
+
+		//如果金币大于10000自动兑换
+		if (result.data[0].validGold > 10000) {
+			$.log("金币大于10000,自动兑换10余额")
+			await exchange(openId, key, generateUUID());
+		}
 	}
 }
 
+//答题卡
+async function getBonusesNum(openId, key, guid) {
+	let url = `https://xcx.szlzyd.com/new/api/task/getBonusesNum/wxb405959bf31342b2/v=030101_${openId}`;
+	let body = JSON.stringify({
+		"b": {
+			"appId": "wxb405959bf31342b2",
+			"productId": 10,
+			"productName": "幸运答题赚",
+			"openId": openId,
+			"customKey": key,
+			"unionId": "",
+			"uuid": guid,
+			"platform": "android",
+			"version": "030101"
+		},
+		"o": { "rightsId": 8 }
+	});
+
+	var result = await requestPost(url, body)
+
+	if (request.code == 0) {
+		$.logErr(result.msg);
+	}
+	else {
+		$.log(`共有${result.data[0]}张答题卡`)
+		return result.data[0]
+	}
+}
+
+//查题目
+async function answerQuery(openId, key, guid) {
+	let url = `https://xcx.szlzyd.com/new/api/answer/query/wxb405959bf31342b2/v=030101_${openId}`;
+	let body = JSON.stringify({
+		"b": {
+			"appId": "wxb405959bf31342b2",
+			"productId": 10,
+			"productName": "幸运答题赚",
+			"openId": openId,
+			"customKey": key,
+			"unionId": "",
+			"uuid": guid,
+			"platform": "android",
+			"version": "030101"
+		},
+		"o": { "answerType": 2 }
+	});
+
+	var result = await requestPost(url, body)
+
+	if (request.code == 0) {
+		$.logErr(result.msg);
+	}
+	else {
+		return result.data[0];
+	}
+}
+
+//完成题目
+async function finish(openId, key, guid, answerId, correct, isfirst) {
+	let url = `https://xcx.szlzyd.com/new/api/answer/finish/wxb405959bf31342b2/v=030101_${openId}`;
+	let body = JSON.stringify({
+		"b": {
+			"appId": "wxb405959bf31342b2",
+			"productId": 10,
+			"productName": "幸运答题赚",
+			"openId": openId,
+			"customKey": key,
+			"unionId": "",
+			"uuid": guid,
+			"platform": "android",
+			"version": "030101"
+		},
+		"o": { "answer": correct, "answerId": answerId, "isFirst": isfirst }
+	});
+
+	var result = await requestPost(url, body)
+
+	if (request.code == 0) {
+		$.logErr(result.msg);
+	}
+	else {
+		return result.data;
+	}
+}
+
+async function exchange(openId, key, guid) {
+	let url = `https://xcx.szlzyd.com/new/api/user/exchange/wxb405959bf31342b2/v=030101_${openId}`;
+	let body = JSON.stringify({
+		"b": {
+			"appId": "wxb405959bf31342b2",
+			"productId": 10,
+			"productName": "幸运答题赚",
+			"openId": openId,
+			"customKey": key,
+			"unionId": "",
+			"uuid": guid,
+			"platform": "android",
+			"version": "030101"
+		},
+		"o": {}
+	});
+
+	var result = await requestPost(url, body)
+
+	if (request.code == 0) {
+		$.logErr(result.msg);
+	}
+	else {
+		$.log(result.msg);
+	}
+}
 
 
 async function postKa(openId, key, type, guid) {
@@ -165,6 +313,7 @@ async function postKa(openId, key, type, guid) {
 	}
 	// body: '{"b": {"appId": "wxb405959bf31342b2","productId": 10,"productName": "幸运答题赚","openId": "o0T6Q4j28SW7VtnOlNFcIY4Js6PQ","customKey": "8EFF631B3BC2D9020FB7","unionId": "","uuid": "7cddb7ae-6a85-4a47-9790-99c8b5cfc379","platform": "android","version": "030101"},"o": {"bonusesTypeIds": [92]}}'
 }
+
 
 function wyy(timeout = 3 * 1000) {
 	return new Promise((resolve) => {
