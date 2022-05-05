@@ -34,8 +34,8 @@ const initRequestHeaders = () => {
 let msg = ''
 let ck = ''
 // @ts-ignore
-//let ckStr = process.env.xydt
-let ckStr = 'openId=o0T6Q4j28SW7VtnOlNFcIY4Js6PQ&key=8EFF631B3BC2D9020FB7'
+let ckStr = process.env.xydt
+//let ckStr = ''
 let ckStrArr = []
 let guids = '';
 /////////////////////////////////////////////////////////
