@@ -35,7 +35,7 @@ let msg = ''
 let ck = ''
 // @ts-ignore
 let ckStr = process.env.xydt
-//let ckStr = 'openId=o0T6Q4kfZv690MLnnu3NPEBJtqGg&key=0840CB4E77D3AB3A234B'
+//let ckStr = ''
 let ckStrArr = []
 let guids = '';
 /////////////////////////////////////////////////////////
