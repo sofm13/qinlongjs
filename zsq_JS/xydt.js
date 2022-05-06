@@ -96,27 +96,34 @@ const signDay = {
 			var answerId = 0;
 			var correct = "";
 			var isfirst = 1;
-			for (let i = 0; i < parseInt(datika); i++) {
 
-				$.log(`开始答题第${i + 1}道`);
-				let answer = await answerQuery(openid, key, generateUUID());
-				answerId = answer.answerId;
-				correct = answer.correct;
+			if (datika >= 20 && datika % 2 == 0) {
+				$.log(`答题卡大于20张开始答题`);
+				for (let i = 0; i < parseInt(datika); i++) {
 
-				let result = await finish(openid, key, generateUUID(), answerId, correct, isfirst);
+					$.log(`开始答题第${i + 1}道`);
+					let answer = await answerQuery(openid, key, generateUUID());
+					answerId = answer.answerId;
+					correct = answer.correct;
 
-				isfirst = isfirst == 1 ? 0 : 1;
-				if (result.find(element => element.type == 1) != undefined) {
-					console.log(`获得金币${result.find(element => element.type == 0).amount} 余额${parseFloat(result.find(element => element.type == 1).amount / 10000)}`);
+					//延时
+					await sleep(1000);
+					let result = await finish(openid, key, generateUUID(), answerId, correct, isfirst);
+
+					isfirst = isfirst == 1 ? 0 : 1;
+					if (result.find(element => element.type == 1) != undefined) {
+						console.log(`获得金币${result.find(element => element.type == 0).amount} 余额${parseFloat(result.find(element => element.type == 1).amount / 10000)}`);
+					}
+					else {
+						console.log(`获得金币${result.find(element => element.type == 0).amount}`);
+					}
+					//延时
+					await sleep(1000);
+					await getBonusesNum(openid, key, generateUUID());
+					await sleep(1000);
 				}
-				else {
-					console.log(`获得金币${result.find(element => element.type == 0).amount}`);
-				}
-				//延时
-				await sleep(1000);
-				await getBonusesNum(openid, key, generateUUID());
-				await sleep(1000);
 			}
+
 
 			await user(openid, key, generateUUID())
 
@@ -154,13 +161,13 @@ async function user(openId, key, guid) {
 		$.logErr(result.msg);
 	}
 	else {
-		let addmsg = `\n 账号${openId} 金币 ${result.data[0].validGold} 余额${result.data[0].validMoney} \n`;
+		let addmsg = `\n 账号${openId} 金币 ${result.data[0].validGold} 余额${parseFloat(result.data[0].validMoney / 10000)} \n`;
 		$.log(addmsg);
 		msg += addmsg;
 
 		//如果金币大于10000自动兑换
 		if (result.data[0].validGold > 10000) {
-			$.log("金币大于10000,自动兑换10余额")
+			$.log("金币大于10000,自动兑换10元余额")
 			await exchange(openId, key, generateUUID());
 		}
 	}
