@@ -35,7 +35,7 @@ let msg = ''
 let ck = ''
 // @ts-ignore
 let ckStr = process.env.xydt
-//let ckStr = ''
+//let ckStr = 'openId=o0T6Q4kfZv690MLnnu3NPEBJtqGg&key=0840CB4E77D3AB3A234B'
 let ckStrArr = []
 let guids = '';
 /////////////////////////////////////////////////////////
@@ -91,6 +91,7 @@ const signDay = {
 				await postKa(openid, key, v, generateUUID())
 			}
 
+			await sign(openid, key, generateUUID())
 			var datika = await getBonusesNum(openid, key, generateUUID())
 
 			var answerId = 0;
@@ -112,10 +113,10 @@ const signDay = {
 
 					isfirst = isfirst == 1 ? 0 : 1;
 					if (result.find(element => element.type == 1) != undefined) {
-						console.log(`获得金币${result.find(element => element.type == 0).amount} 余额${parseFloat(result.find(element => element.type == 1).amount / 10000)}`);
+						$.log(`获得金币${result.find(element => element.type == 0).amount} 余额${parseFloat(result.find(element => element.type == 1).amount / 10000)} 🎉`);
 					}
 					else {
-						console.log(`获得金币${result.find(element => element.type == 0).amount}`);
+						$.log(`获得金币${result.find(element => element.type == 0).amount} 🎉`);
 					}
 					//延时
 					await sleep(1000);
@@ -167,7 +168,7 @@ async function user(openId, key, guid) {
 
 		//如果金币大于10000自动兑换
 		if (result.data[0].validGold > 10000) {
-			$.log("金币大于10000,自动兑换10元余额")
+			$.log("金币大于10000,自动兑换10元余额 🎉")
 			await exchange(openId, key, generateUUID());
 		}
 	}
@@ -199,6 +200,42 @@ async function getBonusesNum(openId, key, guid) {
 	else {
 		$.log(`共有${result.data[0]}张答题卡`)
 		return result.data[0]
+	}
+}
+
+//签到
+async function sign(openId, key, guid) {
+	let url = `https://xcx.szlzyd.com/new/api/sign/serialSign/wxb405959bf31342b2/v=030101_${openId}`;
+	let body = JSON.stringify({
+		"b": {
+			"appId": "wxb405959bf31342b2",
+			"productId": 10,
+			"productName": "幸运答题赚",
+			"openId": openId,
+			"customKey": key,
+			"unionId": "",
+			"uuid": guid,
+			"platform": "android",
+			"version": "030101"
+		},
+		"o": {
+			"1": 72,
+			"2": 74,
+			"3": 76,
+			"4": 78,
+			"5": 80,
+			"6": 82,
+			"7": 84
+		}
+	});
+
+	var result = await requestPost(url, body)
+
+	if (request.code == 0) {
+		$.logErr(result.msg);
+	}
+	else {
+		$.log(`签到成功 🎉`)
 	}
 }
 
