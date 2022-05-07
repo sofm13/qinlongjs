@@ -5,18 +5,20 @@ const { unescape, escape } = require("querystring");
  * 下载地址: 步步宝，走路就能领红包 http://bububao.yichengw.cn/?id=542635
  * 转载请留信息
  * 
- * cron 5/2 * * * *  sofm13_qinlongjs_master/bbz.js
- * 由于主页金币两分钟刷一次，建议两分钟跑一次
- * 
- * 5-7 完成 签到 ,喝水，答题，领取主页金币，领取主页金币（主要建议两分钟跑一次）  任务   
- * 
- * ========= 青龙 =========
- * 变量格式: export bububao='tokenstr1 @ tokenstr2'  多个账号用 @分割
- *
- * tokenstr :  关键词  bububao.duoshoutuan.com  ,headers中的一个参数
- *
- * 还是不会的请百度或者群里求助: https://t.me/zsq_ql, https://t.me/zsq_sofm13 联系群主 @sofm_13 或Q群978963762来一起交流啊
  */
+// cron 0 */1 * * * ?   sofm13_qinlongjs_master/bbz.js
+/**
+* 由于主页金币两分钟刷一次，建议两分钟跑一次
+* 
+* 5-7 完成 签到 ,喝水，答题，领取主页金币，领取主页金币（主要建议两分钟跑一次）  任务   
+* 
+* ========= 青龙 =========
+* 变量格式: export bububao='tokenstr1 @ tokenstr2'  多个账号用 @分割
+*
+* tokenstr :  关键词  bububao.duoshoutuan.com  ,headers中的一个参数
+*
+* 还是不会的请百度或者群里求助: https://t.me/zsq_ql, https://t.me/zsq_sofm13 联系群主 @sofm_13 或Q群978963762来一起交流啊
+*/
 const $ = new Env("步步宝");
 const notify = $.isNode() ? require("./sendNotify") : "";
 const Notify = 1; //0为关闭通知，1为打开通知,默认为1
