@@ -2,7 +2,7 @@ const { unescape, escape } = require("querystring");
 
 /**
  * 步步宝 app  (链接带邀请) 感谢您走我的邀请链接,谢谢,谢谢,谢谢
- * 下载地址: 步步宝，走路就能领红包~http://bububao.yichengw.cn/?id=542635
+ * 下载地址: 步步宝，走路就能领红包 http://bububao.yichengw.cn/?id=542635
  * 转载请留信息
  * 
  * cron 5/2 * * * *  sofm13_qinlongjs_master/bbz.js
