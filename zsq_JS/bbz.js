@@ -5,7 +5,7 @@ const { unescape, escape } = require("querystring");
  * 下载地址: 步步宝，走路就能领红包~http://bububao.yichengw.cn/?id=542635
  * 转载请留信息
  * 
- * cron 30 7 * * *  sofm13_qinlongjs_master/bbz.js
+ * cron 5/2 * * * *  sofm13_qinlongjs_master/bbz.js
  * 由于主页金币两分钟刷一次，建议两分钟跑一次
  * 
  * 5-7 完成 签到 ,喝水，答题，领取主页金币，领取主页金币（主要）  任务   
@@ -27,8 +27,6 @@ let ckStr = process.env.bububao;
 let cyh_dataArr = [];
 let msg = "";
 let ck = "";
-let ad_num = "";
-let ad_video_infoArr = '';
 const taskList = {
   "water": 13
 }
