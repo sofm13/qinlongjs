@@ -8,7 +8,7 @@ const { unescape, escape } = require("querystring");
  * cron 5/2 * * * *  sofm13_qinlongjs_master/bbz.js
  * 由于主页金币两分钟刷一次，建议两分钟跑一次
  * 
- * 5-7 完成 签到 ,喝水，答题，领取主页金币，领取主页金币（主要）  任务   
+ * 5-7 完成 签到 ,喝水，答题，领取主页金币，领取主页金币（主要建议两分钟跑一次）  任务   
  * 
  * ========= 青龙 =========
  * 变量格式: export bububao='tokenstr1 @ tokenstr2'  多个账号用 @分割
@@ -22,8 +22,8 @@ const notify = $.isNode() ? require("./sendNotify") : "";
 const Notify = 1; //0为关闭通知，1为打开通知,默认为1
 const debug = 0; //0为关闭调试，1为打开调试,默认为0
 //////////////////////
-let ckStr = process.env.bububao;
-//let ckStr = "";
+//let ckStr = process.env.bububao;
+let ckStr = "";
 let cyh_dataArr = [];
 let msg = "";
 let ck = "";
@@ -314,10 +314,34 @@ async function cyInfo(timeout = 3 * 1000) {
 
   let result = await httpPost(url, `答题信息`, timeout);
   if (result.day_num > 0) {
+
+    if (result.is_sp == 1) {
+      await cy_sp(timeout, result.day_num);
+      await $.wait(1 * 1000);
+    }
     await cy_click(timeout, result.cy_id, result.site)
   }
   else {
     $.log("答题次数已达上限")
+  }
+}
+
+//答题看视频
+async function cy_sp(timeout = 3 * 1000, day_num) {
+
+  let url = {
+    url: `https://bububao.duoshoutuan.com/mini/cy_sp`,
+    headers: initRequestHeaders(),
+    body: `day_num=${day_num}`
+  };
+
+  let result = await httpPost(url, `答题看视频`, timeout);
+  if (result.code == 1) {
+    console.log(
+      `\n 答题看视频: ${result.msg} `
+    );
+  } else {
+    console.log(`\n 答题: ${result.msg} \n `);
   }
 }
 
