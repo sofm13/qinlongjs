@@ -3,13 +3,14 @@ const { unescape, escape } = require("querystring");
 /**
  * 步步宝 app  (链接带邀请) 感谢您走我的邀请链接,谢谢,谢谢,谢谢
  * 下载地址: 步步宝，走路就能领红包~http://bububao.yichengw.cn/?id=542635
+ * 脚本地址：https://raw.githubusercontent.com/sofm13/qinlongjs/master/zsq_JS/bbz.js
  * 转载请留信息
  * 
  * cron 5,10,20,30,40,50 * * * *  sofm13_qinlongjs_master/bbz.js
  * 由于主页金币有限，正常一小时跑四五次即可，每天大约一块，七天后可手动提取一元，在后面需要等满足提现金额才行提现
  * 
  * 5-7 完成 签到 ,喝水，答题，领取主页金币，领取主页金币（主要建议两分钟跑一次）  任务   
- * 5-6 完成 抽奖，砸金蛋，睡觉，刮卡
+ * 5-9 完成 抽奖，砸金蛋，睡觉，刮卡
  * ========= 青龙 =========
  * 变量格式: export bububao='tokenstr1 @ tokenstr2'  多个账号用 @分割
  *
