@@ -2,23 +2,21 @@ const { unescape, escape } = require("querystring");
 
 /**
  * 步步宝 app  (链接带邀请) 感谢您走我的邀请链接,谢谢,谢谢,谢谢
- * 下载地址: 步步宝，走路就能领红包 http://bububao.yichengw.cn/?id=542635
+ * 下载地址: 步步宝，走路就能领红包~http://bububao.yichengw.cn/?id=542635
  * 转载请留信息
  * 
+ * cron 5,10,20,30,40,50 * * * *  sofm13_qinlongjs_master/bbz.js
+ * 由于主页金币有限，正常一小时跑四五次即可，每天大约一块，七天后可手动提取一元，在后面需要等满足提现金额才行提现
+ * 
+ * 5-7 完成 签到 ,喝水，答题，领取主页金币，领取主页金币（主要建议两分钟跑一次）  任务   
+ * 5-6 完成 抽奖，砸金蛋，睡觉，刮卡
+ * ========= 青龙 =========
+ * 变量格式: export bububao='tokenstr1 @ tokenstr2'  多个账号用 @分割
+ *
+ * tokenstr :  关键词  bububao.duoshoutuan.com  ,headers中的一个参数
+ *
+ * 还是不会的请百度或者群里求助: https://t.me/zsq_ql, https://t.me/zsq_sofm13 联系群主 @sofm_13 或Q群978963762来一起交流啊
  */
-// cron 0 */1 * * * ?   sofm13_qinlongjs_master/bbz.js
-/**
-* 由于主页金币两分钟刷一次，建议两分钟跑一次
-* 
-* 5-7 完成 签到 ,喝水，答题，领取主页金币，领取主页金币（主要建议两分钟跑一次）  任务   
-* 
-* ========= 青龙 =========
-* 变量格式: export bububao='tokenstr1 @ tokenstr2'  多个账号用 @分割
-*
-* tokenstr :  关键词  bububao.duoshoutuan.com  ,headers中的一个参数
-*
-* 还是不会的请百度或者群里求助: https://t.me/zsq_ql, https://t.me/zsq_sofm13 联系群主 @sofm_13 或Q群978963762来一起交流啊
-*/
 const $ = new Env("步步宝");
 const notify = $.isNode() ? require("./sendNotify") : "";
 const Notify = 1; //0为关闭通知，1为打开通知,默认为1
@@ -101,12 +99,24 @@ async function start() {
   await cyInfo();
   await $.wait(2 * 1000);
 
-  console.log("开始 检查任务状态");
-  var taskall = await taskInfo();
+  console.log("开始 抽奖");
+  await lucky();
+  await $.wait(2 * 1000);
 
-  for (const [key, value] of Object.entries(taskList)) {
-    await taskDone(3 * 1000, taskall.first[key], value, taskall.first[`${key}_title`], taskall.first[`${key}_jinbi`]);
-  }
+  console.log("开始 刮卡");
+  await guainfo();
+  await $.wait(2 * 1000);
+
+  console.log("开始 砸金蛋");
+  await jindan();
+  await $.wait(2 * 1000);
+
+  // console.log("开始 检查任务状态");
+  // var taskall = await taskInfo();
+
+  // for (const [key, value] of Object.entries(taskList)) {
+  //   await taskDone(3 * 1000, taskall.first[key], value, taskall.first[`${key}_title`], taskall.first[`${key}_jinbi`]);
+  // }
 
 }
 
@@ -151,9 +161,9 @@ async function signin(timeout = 3 * 1000) {
 
   let result = await httpPost(url, `签到`, timeout);
   if (result.code == 0) {
-    console.log(`\n 签到:成功 🎉   签到获得 积分 ${result.data} \n`);
+    console.log(`\n 签到:成功 🎉   签到获得 金币 ${result.jinbi} \n`);
 
-    msg += `\n 签到:成功 🎉   签到获得 积分 ${result.data} \n`
+    msg += `\n 签到:成功 🎉   签到获得 金币 ${result.jinbi} \n`
   } else {
     console.log(`\n 签到: ${result.msg} \n `);
   }
@@ -213,9 +223,7 @@ async function water_click(timeout = 3 * 1000, day_num) {
   }
 }
 
-/**
- * 用户信息   
- */
+//用户信息   
 async function userInfo(timeout = 3 * 1000) {
 
   let url = {
@@ -304,9 +312,7 @@ async function taskDone(timeout = 3 * 1000, taskStatus, taskid, taskName, jinbi)
 }
 
 
-/**
- * 答题信息   
- */
+//答题信息   
 async function cyInfo(timeout = 3 * 1000) {
 
   let url = {
@@ -317,6 +323,7 @@ async function cyInfo(timeout = 3 * 1000) {
   let result = await httpPost(url, `答题信息`, timeout);
   if (result.day_num > 0) {
 
+    $.log(`答题${result.day_num}/30 每次答一题`)
     if (result.is_sp == 1) {
       await cy_sp(timeout, result.day_num);
       await $.wait(1 * 1000);
@@ -364,6 +371,222 @@ async function cy_click(timeout = 3 * 1000, cy_id, site) {
     msg += `\n 答题:成功 ${result.msg} 🎉   答题获得 金币 ${result.jinbi}`
   } else {
     console.log(`\n 答题: ${result.msg} \n `);
+  }
+}
+
+//抽奖信息
+async function lucky(timeout = 3 * 1000) {
+
+  let url = {
+    url: `https://bububao.duoshoutuan.com/user/lucky`,
+    headers: initRequestHeaders(),
+  };
+
+  let result = await httpPost(url, `抽奖信息`, timeout);
+  if (result.lucky_num > 0) {
+
+    $.log(`抽奖${result.lucky_count}/100 每次抽5次`)
+    for (let i = 0; i < 5; i++) {
+      await lucky_click(timeout);
+      await $.wait(1 * 1000);
+    }
+
+  }
+  else {
+    $.log("抽奖次数已达上限")
+  }
+}
+
+//抽奖
+async function lucky_click(timeout = 3 * 1000) {
+
+  let url = {
+    url: `https://bububao.duoshoutuan.com/user/lucky_click`,
+    headers: initRequestHeaders(),
+  };
+
+  let result = await httpPost(url, `抽奖`, timeout);
+  if (result.code == 1) {
+    console.log(
+      `\n 抽奖: ${result.msg}  抽奖获得 金币 ${result.jinbi} `
+    );
+    msg += `\n 抽奖:成功 ${result.msg} 🎉   抽奖获得 金币 ${result.jinbi}`
+  } else {
+    console.log(`\n 抽奖: ${result.msg} \n `);
+  }
+}
+
+//刮卡信息
+async function guainfo(timeout = 3 * 1000) {
+
+  let url = {
+    url: `https://bububao.duoshoutuan.com/gua/gualist`,
+    headers: initRequestHeaders(),
+  };
+
+  let result = await httpPost(url, `刮卡信息`, timeout);
+  if (result.ka > 0) {
+
+    $.log(`刮卡${result.ka}/15 每次刮1次`)
+    var max = Math.max.apply(Math, result.list.map(item => { return item.jine }))
+    await gua(timeout, result.list.find(x => x.jine == max).id);
+  }
+  else {
+    $.log("刮卡次数已达上限")
+  }
+}
+
+//刮卡
+async function gua(timeout = 3 * 1000, gid) {
+
+  let url = {
+    url: `https://bububao.duoshoutuan.com/gua/guadet`,
+    headers: initRequestHeaders(),
+    body: `gid=${gid}`
+  };
+
+  let result = await httpPost(url, `刮卡`, timeout);
+  url = {
+    url: `https://bububao.duoshoutuan.com/gua/guapost`,
+    headers: initRequestHeaders(),
+    body: `gid=${gid}&sign=${result.sign}&glid=${result.glid}`
+  };
+
+  await $.wait(1 * 1000);
+  result = await httpPost(url, `刮卡`, timeout);
+  if (result.suc == 1) {
+    console.log(
+      `\n 刮卡获得 金币 ${result.jf} `
+    );
+    msg += `\n 刮卡获得 金币 ${result.jf} 🎉 `
+  } else {
+    console.log(`\n 刮卡: ${result.msg} \n `);
+  }
+}
+
+//砸金蛋
+async function jindan(timeout = 3 * 1000) {
+
+  let url = {
+    url: `https://bububao.duoshoutuan.com/user/jindan_click`,
+    headers: initRequestHeaders(),
+  };
+
+  let result = await httpPost(url, `砸金蛋`, timeout);
+  if (result.code == 1) {
+
+    console.log(
+      `\n 砸金蛋  ${result.msg} `
+    );
+
+    await $.wait(1 * 1000);
+    await jindan_click(timeout, result.taskid, result.nonce_str)
+
+  } else {
+    console.log(`\n 砸金蛋: ${result.msg} \n `);
+  }
+}
+
+//砸金蛋金币
+async function jindan_click(timeout = 3 * 1000, taskid, str) {
+
+  var date = Math.round(new Date().getTime());
+  let url = {
+    url: `https://bububao.duoshoutuan.com/user/jindan_finish`,
+    headers: initRequestHeaders(),
+    body: `taskid=${taskid}&nonce_str=${str}&clicktime=${date}&donetime=${date + 2}`
+  };
+
+  let result = await httpPost(url, `砸金蛋得金币`, timeout);
+  await $.wait(2 * 1000);
+
+  url = {
+    url: `https://bububao.duoshoutuan.com/user/jindan_jinbi`,
+    headers: initRequestHeaders(),
+    body: `taskid=${taskid}&nonce_str=${str}`
+  };
+
+  result = await httpPost(url, `砸金蛋得金币`, timeout);
+  if (result.code == 1) {
+    console.log(
+      `\n 砸金蛋获得 金币 ${result.jinbi}  🎉`
+    );
+    msg += `\n 砸金蛋获得 金币 ${result.jinbi} 🎉 `
+  } else {
+    console.log(`\n 砸金蛋: ${result.msg} \n `);
+  }
+}
+
+//睡觉
+async function sleep(timeout = 3 * 1000) {
+
+  let url = {
+    url: `https://bububao.duoshoutuan.com/mini/sleep_info`,
+    headers: initRequestHeaders(),
+  };
+
+  let result = await httpPost(url, `睡觉信息`, timeout);
+  if (result.code == 1) {
+
+    console.log(
+      `\n 睡觉信息  是否睡觉:${result.is_sleep == 0 ? "是" : "否"} `
+    );
+
+    if (result.is_sleep == 0) {
+      url = {
+        url: `https://bububao.duoshoutuan.com/user/sleep_start`,
+        headers: initRequestHeaders(),
+      };
+
+      result = await httpPost(url, `开始睡觉`, timeout);
+      $.log("开始睡觉")
+    }
+    else {
+
+      url = {
+        url: `https://bububao.duoshoutuan.com/user/sleep_end`,
+        headers: initRequestHeaders(),
+      };
+
+      result = await httpPost(url, `结束睡觉`, timeout);
+      if (result.code == 1) {
+        console.log(
+          `\n 结束睡觉 获得 金币 ${result.jinbi}  🎉`
+        );
+        msg += `\n 结束睡觉 获得 金币 ${result.jinbi} 🎉 `
+      } else {
+        console.log(`\n 结束睡觉: ${result.msg} \n `);
+      }
+    }
+
+  } else {
+    console.log(`\n 睡觉信息: ${result.msg} \n `);
+  }
+}
+
+//砸金蛋金币
+async function sleep_start(timeout = 3 * 1000) {
+
+  var date = Math.round(new Date().getTime());
+
+
+  let result = await httpPost(url, `砸金蛋得金币`, timeout);
+  await $.wait(2 * 1000);
+
+  url = {
+    url: `https://bububao.duoshoutuan.com/user/jindan_jinbi`,
+    headers: initRequestHeaders(),
+    body: `taskid=${taskid}&nonce_str=${str}`
+  };
+
+  result = await httpPost(url, `砸金蛋得金币`, timeout);
+  if (result.code == 1) {
+    console.log(
+      `\n 砸金蛋获得 金币 ${result.jinbi}  🎉`
+    );
+    msg += `\n 砸金蛋获得 金币 ${result.jinbi} 🎉 `
+  } else {
+    console.log(`\n 砸金蛋: ${result.msg} \n `);
   }
 }
 
