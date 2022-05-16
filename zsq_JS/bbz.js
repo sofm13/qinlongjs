@@ -126,13 +126,13 @@ async function start() {
 
   console.log("开始 阅读");
   for (let index = 0; index < 5; index++) {
-    await news(3 * 1000, 1, `阅读`);
+    await news(3 * 1000, 1, `阅读*${index}`);
     await $.wait(2 * 1000);
   }
 
   console.log("开始 看视频");
   for (let index = 0; index < 5; index++) {
-    await news(3 * 1000, 2, `看视频`);
+    await news(3 * 1000, 2, `看视频*${index}`);
     await $.wait(2 * 1000);
   }
 
