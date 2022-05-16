@@ -25,7 +25,7 @@ const Notify = 1; //0为关闭通知，1为打开通知,默认为1
 const debug = 0; //0为关闭调试，1为打开调试,默认为0
 //////////////////////
 let ckStr = process.env.bububao;
-let ckStr = "";
+//let ckStr = "";
 let cyh_dataArr = [];
 let msg = "";
 let ck = "";
