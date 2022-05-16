@@ -1,4 +1,5 @@
 const { unescape, escape } = require("querystring");
+var request = require('request');
 
 /**
  * 步步宝 app  (链接带邀请) 感谢您走我的邀请链接,谢谢,谢谢,谢谢
@@ -6,7 +7,7 @@ const { unescape, escape } = require("querystring");
  * 脚本地址：https://raw.githubusercontent.com/sofm13/qinlongjs/master/zsq_JS/bbz.js
  * 转载请留信息
  * 
- * cron 5,10,20,30,40,50 * * * *  sofm13_qinlongjs_master/bbz.js
+ * cron 5/25/50 8-20 * * *  sofm13_qinlongjs_master/bbz.js
  * 由于主页金币有限，正常一小时跑四五次即可，每天大约一块，七天后可手动提取一元，在后面需要等满足提现金额才行提现
  * 
  * 5-7 完成 签到 ,喝水，答题，领取主页金币，领取主页金币（主要建议两分钟跑一次）  任务   
@@ -24,7 +25,7 @@ const Notify = 1; //0为关闭通知，1为打开通知,默认为1
 const debug = 0; //0为关闭调试，1为打开调试,默认为0
 //////////////////////
 let ckStr = process.env.bububao;
-//let ckStr = "";
+let ckStr = "";
 let cyh_dataArr = [];
 let msg = "";
 let ck = "";
@@ -80,9 +81,19 @@ async function tips(ckArr) {
 
 async function start() {
 
+  var nowDate = new Date();
   console.log("开始 用户信息状态");
   await userInfo();
   await $.wait(2 * 1000);
+
+  if (nowDate.getHours() == 8) {
+    console.log("8点开始 打卡");
+    await dk_click();
+    await $.wait(2 * 1000);
+  }
+  else {
+    console.log("非8点");
+  }
 
   console.log("开始 检查主页");
   await home();
@@ -110,6 +121,23 @@ async function start() {
 
   console.log("开始 砸金蛋");
   await jindan();
+  await $.wait(2 * 1000);
+
+
+  console.log("开始 阅读");
+  for (let index = 0; index < 5; index++) {
+    await news(3 * 1000, 1, `阅读`);
+    await $.wait(2 * 1000);
+  }
+
+  console.log("开始 看视频");
+  for (let index = 0; index < 5; index++) {
+    await news(3 * 1000, 2, `看视频`);
+    await $.wait(2 * 1000);
+  }
+
+  console.log("开始 小程序刮卡");
+  await weguaInfo();
   await $.wait(2 * 1000);
 
   // console.log("开始 检查任务状态");
@@ -565,29 +593,173 @@ async function sleep(timeout = 3 * 1000) {
   }
 }
 
-//砸金蛋金币
-async function sleep_start(timeout = 3 * 1000) {
-
-  var date = Math.round(new Date().getTime());
-
-
-  let result = await httpPost(url, `砸金蛋得金币`, timeout);
-  await $.wait(2 * 1000);
-
-  url = {
-    url: `https://bububao.duoshoutuan.com/user/jindan_jinbi`,
+//打卡
+async function dk_click(timeout = 3 * 1000) {
+  let url = {
+    url: `https://bububao.duoshoutuan.com/mini/dk_click`,
     headers: initRequestHeaders(),
-    body: `taskid=${taskid}&nonce_str=${str}`
+    body: `now_time=2`
   };
 
-  result = await httpPost(url, `砸金蛋得金币`, timeout);
+  let result = await httpPost(url, `打卡`, timeout);
   if (result.code == 1) {
     console.log(
-      `\n 砸金蛋获得 金币 ${result.jinbi}  🎉`
+      `\n 打卡获得 金币 ${result.jinbi}  🎉`
     );
-    msg += `\n 砸金蛋获得 金币 ${result.jinbi} 🎉 `
+    msg += `\n 打卡获得 金币 ${result.jinbi} 🎉 `
   } else {
-    console.log(`\n 砸金蛋: ${result.msg} \n `);
+    console.log(`\n 打卡: ${result.msg} \n `);
+  }
+}
+
+//阅读
+async function news(timeout = 3 * 1000, type, tip) {
+  let url = {
+    url: `https://bububao.duoshoutuan.com/user/news`,
+    headers: initRequestHeaders(),
+    body: `type_class=${type}`
+  };
+
+  let result = await httpPost(url, tip, timeout);
+  if (result.code == 1) {
+    var str = result.nonce_str;
+    url = {
+      url: `https://bububao.duoshoutuan.com/user/donenews`,
+      headers: initRequestHeaders(),
+      body: `nonce_str=${str}`
+    };
+
+    await $.wait(20 * 1000)
+    result = await httpPost(url, tip, timeout);
+    if (result.code == 1) {
+      console.log(
+        `\n 模拟${tip}获得 金币 ${result.jinbi}  🎉`
+      );
+      msg += `\n 模拟${tip}获得 金币 ${result.jinbi} 🎉 `
+    } else {
+      console.log(`\n 模拟${tip}: ${result.msg} \n `);
+    }
+
+  } else {
+    console.log(`\n ${str}信息: ${result.msg} \n `);
+  }
+}
+
+//小程序刮卡
+async function weguaInfo(timeout = 3 * 1000) {
+
+  let url = {
+    url: `https://bububao.duoshoutuan.com/weapp/mini_clicks`,
+    headers: initRequestHeaders(),
+    body: `mini_id=30`
+  };
+
+  let result = await httpPost(url, `小程序信息`, timeout);
+  let path = result.mini_path;
+  var postJson = path.substring(path.indexOf('{'), path.indexOf('}'));
+  var uid = JSON.parse(`${postJson}}`).uid;
+  var nonce_str = JSON.parse(`${postJson}}`).nonce_str;
+
+  url = {
+    url: `https://bububao.duoshoutuan.com/gua/welist`,
+    headers: {
+      'Host': 'bububao.duoshoutuan.com',
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      "nonce_str": nonce_str,
+      "uid": uid,
+      "mini_id": "30",
+      "j_st": 1,
+      "ver": "1.3.5",
+      "v3": randomDid(12),
+      "toto": randomDid(32),
+      "token": ""
+    })
+  };
+
+  result = await httpPost(url, `小程序刮卡信息`, timeout);
+  if (result.ka > 0) {
+
+    $.log(`刮卡${result.ka}/15 每次刮1次`)
+    var max = Math.max.apply(Math, result.list.map(item => { return item.jine }))
+    await wegua(3 * 1000, result.list.find(x => x.jine == max && x.is_ad == 0).id, uid);
+  }
+  else {
+    $.log("刮卡次数已达上限")
+  }
+
+}
+
+
+//刮卡
+async function wegua(timeout = 3 * 1000, gid, uid) {
+  var addJson = `,"ver":"1.3.5","v3":"232521exhghx","toto":"263d8494554fb3402b7edd22578597fb","token":""`;
+
+  var urlJosn = `{"uid":"${uid}","gid":"${gid}"${addJson}}`;
+  console.log(urlJosn)
+  let url = {
+    url: `https://bububao.duoshoutuan.com/gua/wedet`,
+    headers: {
+      'Host': 'bububao.duoshoutuan.com',
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      "gid": gid,
+      "uid": uid,
+      "ver": "1.3.5",
+      "v3": randomDid(12),
+      "toto": randomDid(32),
+      "token": ""
+    })
+  };
+
+  let result = await httpPost(url, `小程序刮卡`, timeout);
+  var postBody = JSON.stringify({
+    "glid": result.glid,
+    "gid": gid,
+    "uid": uid,
+    "sign": result.sign,
+    "ver": "1.3.5",
+    "v3": randomDid(12),
+    "toto": randomDid(32),
+    "token": ""
+  });
+  url = {
+    url: `https://bububao.duoshoutuan.com/gua/gua_post`,
+    headers: {
+      'Host': 'bububao.duoshoutuan.com',
+      'Content-Type': 'application/json',
+    },
+    body: postBody
+  };
+
+  await $.wait(1 * 1000);
+  result = await httpPost(url, `刮卡`, timeout);
+  if (result.suc == 1) {
+    console.log(
+      `\n 刮卡获得 金币 ${result.jf} `
+    );
+
+    url = {
+      url: `https://bububao.duoshoutuan.com/gua/fanbei`,
+      headers: {
+        'Host': 'bububao.duoshoutuan.com',
+        'Content-Type': 'application/json',
+      },
+      body: postBody
+    };
+
+    await $.wait(1 * 1000);
+    result = await httpPost(url, `刮卡翻倍`, timeout);
+    console.log(
+      `\n 刮卡翻倍获得 金币 ${result.fb_jinbi} `
+    );
+
+    msg += `\n 刮卡获得 金币 ${result.fb_jinbif} 🎉 `
+
+  } else {
+    console.log(`\n 刮卡: ${result.msg} \n `);
   }
 }
 
@@ -704,8 +876,16 @@ function randomString(e) {
  * 随机整数生成
  */
 
-function randomInt(min, max) {
-  return Math.round(Math.random() * (max - min) + min);
+function randomDid(T = 32) {
+  let p = "abcdef0123456789",
+    C = p["length"],
+    S = '';
+
+  for (i = 0; i < T; i++) {
+    S += p["charAt"](Math["floor"](Math["random"]() * C));
+  }
+
+  return S;
 }
 
 //每日网抑云
@@ -808,6 +988,38 @@ async function httpPost(postUrlObject, tip, timeout = 3 * 1000) {
       },
       timeout
     );
+  });
+}
+
+async function requestPost(postUrlObject, tip, timeout = 3 * 1000) {
+  return new Promise((resolve) => {
+    var options = {
+      'method': 'POST',
+      'url': postUrlObject.url,
+      'headers': postUrlObject.headers,
+      body: postUrlObject.body
+    };
+    if (debug) {
+      console.log(
+        `\n 【debug】=============== 这是 ${tip} 请求 url ===============`
+      );
+      console.log(options);
+    }
+    request(options, function (error, response) {
+      if (error) throw new Error(error);
+      if (debug) {
+        console.log(
+          `\n\n 【debug】===============这是 ${tip} 返回data==============`
+        );
+        console.log(response.body);
+        console.log(`======`);
+        console.log(JSON.parse(response.body));
+      }
+      let result = JSON.parse(response.body);
+      resolve(result);
+    });
+
+
   });
 }
 
