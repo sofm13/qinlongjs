@@ -2,9 +2,9 @@
  * 旷工驾到  app (链接带邀请)  谢谢填写
  * 下载地址: 【矿工驾到】打开链接，下载安装应用http://kgjd.jmsfx.top/download/d72e2fb8eb3c11ae?user=84500
  * 
- * cron 0 * * * *  yml2213_javascript_master/jzkg.js
+ * cron 5 * * * *  sofm13_qinlongjs_master/jzkg.js
  *
- * 旷工驾到 app 
+ * 旷工驾到 app 类似以前的疯狂水晶，只有app
  * 
  * 薅了可能有,不薅一定没有,别问收益!!
  *
