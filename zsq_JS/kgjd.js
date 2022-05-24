@@ -1,10 +1,10 @@
 /**
- * 旷工驾到  app (链接带邀请)  谢谢填写
+ * 矿工驾到  app (链接带邀请)  谢谢填写
  * 下载地址: 【矿工驾到】打开链接，下载安装应用http://kgjd.jmsfx.top/download/d72e2fb8eb3c11ae?user=84500
  * 
  * cron 5 * * * *  sofm13_qinlongjs_master/jzkg.js
  *
- * 旷工驾到 app 类似以前的疯狂水晶，只有app
+ * 矿工驾到 app 类似以前的疯狂水晶，只有app
  * 
  * 薅了可能有,不薅一定没有,别问收益!!
  *
@@ -15,9 +15,8 @@
  *
  * userid   app 页面兑换界面--左上角 有 id , 找不到的可以告别羊毛了  在问自杀
  *
- * 神秘代码: aHR0cHM6Ly90Lm1lL3ltbF90Zw==
  */
- const $ = new Env("旷工驾到");
+ const $ = new Env("矿工驾到");
  const notify = $.isNode() ? require("./sendNotify") : "";
  const Notify = 1; 		//0为关闭通知，1为打开通知,默认为1
  const debug = 0; 		//0为关闭调试，1为打开调试,默认为0
@@ -361,7 +360,7 @@
  
    if (Notify > 0) {
      if ($.isNode()) {
-       var notify = require("../金砖旷工/sendNotify");
+       var notify = require("../矿工驾到/sendNotify");
        await notify.sendNotify($.name, message);
      } else {
        $.msg(message);
