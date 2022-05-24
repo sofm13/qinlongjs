@@ -15,6 +15,8 @@
  * 变量格式: export kgjd_data='userid1 @ userid2'  多个账号用 @分割
  *
  * userid   app 页面兑换界面--左上角 有 id , 找不到的可以告别羊毛了  在问自杀
+ * 
+ * 还是不会的请百度或者群里求助: https://t.me/zsq_ql, https://t.me/zsq_sofm13 联系群主 @sofm_13 或Q群978963762来一起交流啊
  *
  */
  const $ = new Env("矿工驾到");
